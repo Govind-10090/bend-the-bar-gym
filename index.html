@@ -584,38 +584,61 @@
             });
         });
 
+        // Global variables for current plan
         let currentPlanType = '';
         let currentAmount = 0;
 
         // Show customer details modal
         function showCustomerDetailsModal(planType, amount) {
+            console.log('Showing modal for:', planType, amount); // Debug log
             currentPlanType = planType;
             currentAmount = amount;
-            document.getElementById('customerDetailsModal').classList.remove('hidden');
-            document.getElementById('customerDetailsModal').classList.add('flex');
+            const modal = document.getElementById('customerDetailsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
         // Close customer details modal
         function closeCustomerDetailsModal() {
-            document.getElementById('customerDetailsModal').classList.add('hidden');
-            document.getElementById('customerDetailsModal').classList.remove('flex');
+            console.log('Closing modal'); // Debug log
+            const modal = document.getElementById('customerDetailsModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             document.getElementById('customerDetailsForm').reset();
         }
 
         // Handle customer details form submission
         document.getElementById('customerDetailsForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            console.log('Form submitted'); // Debug log
+            
             const name = document.getElementById('customerName').value;
             const email = document.getElementById('customerEmail').value;
             const phone = document.getElementById('customerPhone').value;
+            
+            console.log('Customer details:', { name, email, phone }); // Debug log
             
             // Initialize payment with customer details
             initializePayment(currentPlanType, currentAmount, name, email, phone);
             closeCustomerDetailsModal();
         });
 
-        // Update payment initialization function
+        // Update click handlers for membership buttons
+        document.querySelectorAll('.membership-join-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Join Now clicked'); // Debug log
+                const planType = this.getAttribute('data-plan');
+                const amount = parseInt(this.getAttribute('data-amount'));
+                console.log('Plan details:', { planType, amount }); // Debug log
+                showCustomerDetailsModal(planType, amount);
+            });
+        });
+
+        // Payment Gateway Integration
         function initializePayment(planType, amount, name, email, phone) {
+            console.log('Initializing payment with:', { planType, amount, name, email, phone }); // Debug log
+            
             const options = {
                 key: "rzp_live_e2N5R5s2maYi3r",
                 amount: amount * 100,
@@ -641,6 +664,8 @@
                             phone: phone
                         };
 
+                        console.log('Payment data:', paymentData); // Debug log
+
                         const verifyResponse = await fetch('/api/verify-payment', {
                             method: 'POST',
                             headers: {
@@ -650,6 +675,7 @@
                         });
 
                         const result = await verifyResponse.json();
+                        console.log('Payment verification result:', result); // Debug log
 
                         if (result.success) {
                             alert("Payment successful! Welcome to Bend The Bar Gym!");
@@ -680,16 +706,6 @@
                 alert("Error initializing payment. Please try again.");
             }
         }
-
-        // Update click handlers for membership buttons
-        document.querySelectorAll('.membership-join-btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const planType = this.getAttribute('data-plan');
-                const amount = parseInt(this.getAttribute('data-amount'));
-                showCustomerDetailsModal(planType, amount);
-            });
-        });
 
         // Add error handling for payment failures
         window.addEventListener('error', function(e) {
