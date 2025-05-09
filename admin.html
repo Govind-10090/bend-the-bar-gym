@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Bend The Bar Gym</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF4B2B',
+                        secondary: '#1A237E',
+                        dark: '#0A192F',
+                        darker: '#050B1F',
+                        accent: '#FFD700',
+                        light: '#F8FAFC',
+                        success: '#10B981'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darker text-gray-300">
+    <div class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-dark shadow-lg">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <span class="text-2xl font-bold text-primary">Bend The Bar</span>
+                        <span class="ml-4 text-gray-400">Admin Dashboard</span>
+                    </div>
+                    <div class="flex items-center">
+                        <button id="refreshBtn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                            Refresh Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-2">Total Members</h3>
+                    <p id="totalMembers" class="text-3xl font-bold text-primary">Loading...</p>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-2">Total Revenue</h3>
+                    <p id="totalRevenue" class="text-3xl font-bold text-success">Loading...</p>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-2">Success Rate</h3>
+                    <p id="successRate" class="text-3xl font-bold text-accent">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Membership Distribution</h3>
+                    <canvas id="membershipChart"></canvas>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Revenue by Plan</h3>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Payments -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">Recent Payments</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="text-left text-gray-400">
+                                <th class="pb-4">Payment ID</th>
+                                <th class="pb-4">Plan</th>
+                                <th class="pb-4">Amount</th>
+                                <th class="pb-4">Status</th>
+                                <th class="pb-4">Date</th>
+                                <th class="pb-4">Email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentPayments">
+                            <tr>
+                                <td colspan="6" class="text-center py-4">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch and display payment statistics
+        async function fetchStats() {
+            try {
+                const response = await fetch('/api/payment-stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateDashboard(data.stats);
+                }
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Update dashboard with statistics
+        function updateDashboard(stats) {
+            let totalMembers = 0;
+            let totalRevenue = 0;
+            let totalSuccess = 0;
+
+            stats.forEach(stat => {
+                totalMembers += stat.total;
+                totalRevenue += stat.totalAmount;
+                totalSuccess += stat.successCount;
+            });
+
+            // Update overview stats
+            document.getElementById('totalMembers').textContent = totalMembers;
+            document.getElementById('totalRevenue').textContent = `₹${totalRevenue}`;
+            document.getElementById('successRate').textContent = 
+                `${((totalSuccess / totalMembers) * 100).toFixed(1)}%`;
+
+            // Update charts
+            updateMembershipChart(stats);
+            updateRevenueChart(stats);
+        }
+
+        // Update membership distribution chart
+        function updateMembershipChart(stats) {
+            const ctx = document.getElementById('membershipChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: stats.map(stat => stat._id),
+                    datasets: [{
+                        data: stats.map(stat => stat.total),
+                        backgroundColor: ['#FF4B2B', '#1A237E']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update revenue chart
+        function updateRevenueChart(stats) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: stats.map(stat => stat._id),
+                    datasets: [{
+                        label: 'Revenue',
+                        data: stats.map(stat => stat.totalAmount),
+                        backgroundColor: '#10B981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#fff'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fetch recent payments
+        async function fetchRecentPayments() {
+            try {
+                const response = await fetch('/api/recent-payments');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateRecentPaymentsTable(data.payments);
+                }
+            } catch (error) {
+                console.error('Error fetching recent payments:', error);
+            }
+        }
+
+        // Update recent payments table
+        function updateRecentPaymentsTable(payments) {
+            const tbody = document.getElementById('recentPayments');
+            tbody.innerHTML = payments.map(payment => `
+                <tr class="border-t border-gray-700">
+                    <td class="py-4">${payment.razorpay_payment_id}</td>
+                    <td>${payment.plan_type}</td>
+                    <td>₹${payment.amount}</td>
+                    <td>
+                        <span class="px-2 py-1 rounded-full text-sm ${
+                            payment.status === 'success' ? 'bg-success text-white' :
+                            payment.status === 'failed' ? 'bg-red-500 text-white' :
+                            'bg-gray-500 text-white'
+                        }">
+                            ${payment.status}
+                        </span>
+                    </td>
+                    <td>${new Date(payment.created_at).toLocaleDateString()}</td>
+                    <td>${payment.email}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Refresh data
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            fetchStats();
+            fetchRecentPayments();
+        });
+
+        // Initial load
+        fetchStats();
+        fetchRecentPayments();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - Bend The Bar Gym</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF4B2B',
+                        secondary: '#1A237E',
+                        dark: '#0A192F',
+                        darker: '#050B1F',
+                        accent: '#FFD700',
+                        light: '#F8FAFC',
+                        success: '#10B981'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darker text-gray-300">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-2xl w-full bg-gray-800 rounded-lg shadow-xl p-8">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-success rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-white mb-2">Payment Successful!</h1>
+                <p class="text-gray-400">Welcome to Bend The Bar Gym</p>
+            </div>
+
+            <div class="bg-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-xl font-semibold text-white mb-4">Membership Details</h2>
+                <div id="membershipDetails" class="space-y-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Plan Type:</span>
+                        <span id="planType" class="text-white font-medium"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Amount Paid:</span>
+                        <span id="amount" class="text-white font-medium"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Payment ID:</span>
+                        <span id="paymentId" class="text-white font-medium"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Status:</span>
+                        <span id="status" class="text-success font-medium">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-white mb-4">Next Steps</h2>
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <p class="text-gray-300 mb-4">1. Check your email for membership confirmation</p>
+                    <p class="text-gray-300 mb-4">2. Visit the gym with your ID proof</p>
+                    <p class="text-gray-300">3. Get your membership card and start your fitness journey!</p>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <a href="/" class="inline-block bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-all">
+                    Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get payment ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentId = urlParams.get('payment_id');
+
+        if (paymentId) {
+            // Fetch payment details
+            fetch(`http://localhost:3000/payment-status/${paymentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('planType').textContent = data.plan_type;
+                        document.getElementById('amount').textContent = `₹${data.amount}`;
+                        document.getElementById('paymentId').textContent = paymentId;
+                        document.getElementById('status').textContent = data.status;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching payment details:', error);
+                });
+        }
+    </script>
+</body>
+</html> 

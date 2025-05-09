@@ -553,17 +553,48 @@
         // Payment Gateway Integration
         function initializePayment(planType, amount) {
             const options = {
-                key: process.env.RAZORPAY_KEY_ID || "YOUR_RAZORPAY_KEY_ID", // Will use environment variable in production
+                key: "rzp_live_e2N5R5s2maYi3r", // Razorpay Live Key
                 amount: amount * 100, // Amount in paise
                 currency: "INR",
                 name: "Bend The Bar Gym",
                 description: `${planType} Membership Plan`,
                 image: "https://your-logo-url.com/logo.png", // Replace with your gym logo
-                handler: function (response) {
-                    // Handle successful payment
-                    alert("Payment successful! Your membership has been activated.");
-                    // Here you would typically make an API call to your backend to verify the payment
-                    // and activate the membership
+                handler: async function (response) {
+                    try {
+                        // Create payment verification data
+                        const paymentData = {
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                            plan_type: planType,
+                            amount: amount,
+                            email: document.getElementById('email')?.value || ''
+                        };
+
+                        // Verify payment with backend
+                        const verifyResponse = await fetch('/api/verify-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(paymentData)
+                        });
+
+                        const result = await verifyResponse.json();
+
+                        if (result.success) {
+                            // Show success message
+                            alert("Payment successful! Welcome to Bend The Bar Gym!");
+                            
+                            // Redirect to success page or show membership details
+                            window.location.href = `/payment-success.html?payment_id=${response.razorpay_payment_id}`;
+                        } else {
+                            alert("Payment verification failed. Please contact support.");
+                        }
+                    } catch (error) {
+                        console.error('Payment verification error:', error);
+                        alert("An error occurred. Please contact support.");
+                    }
                 },
                 prefill: {
                     name: "",
@@ -572,19 +603,38 @@
                 },
                 theme: {
                     color: "#FF4B2B"
+                },
+                modal: {
+                    ondismiss: function() {
+                        console.log("Payment modal closed");
+                    }
                 }
             };
 
-            const rzp = new Razorpay(options);
-            rzp.open();
+            try {
+                const rzp = new Razorpay(options);
+                rzp.open();
+            } catch (error) {
+                console.error('Error initializing Razorpay:', error);
+                alert("Error initializing payment. Please try again.");
+            }
         }
+
+        // Add error handling for payment failures
+        window.addEventListener('error', function(e) {
+            if (e.message.includes('Razorpay')) {
+                console.error('Razorpay Error:', e);
+                alert("An error occurred with the payment system. Please try again later.");
+            }
+        });
 
         // Add click handlers for membership buttons
         document.querySelectorAll('.membership-join-btn').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const planType = this.getAttribute('data-plan');
-                const amount = this.getAttribute('data-amount');
+                const amount = parseInt(this.getAttribute('data-amount'));
+                console.log('Initializing payment for:', planType, amount); // Debug log
                 initializePayment(planType, amount);
             });
         });
